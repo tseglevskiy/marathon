@@ -125,7 +125,6 @@ class Marathon(val configuration: Configuration) {
         }
 
         analytics.terminate()
-        analytics.close()
         deviceProvider.terminate()
         return progressReporter.aggregateResult()
     }
