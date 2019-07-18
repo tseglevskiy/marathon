@@ -6,50 +6,23 @@ import com.android.ddmlib.TimeoutException
 import com.android.ddmlib.testrunner.ITestRunListener
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner
 import com.android.ddmlib.testrunner.TestIdentifier
-import com.malinskiy.marathon.android.AndroidConfiguration
-import com.malinskiy.marathon.android.AndroidDevice
-import com.malinskiy.marathon.android.ApkParser
-import com.malinskiy.marathon.android.InstrumentationInfo
-import com.malinskiy.marathon.android.executor.listeners.CompositeTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.DebugTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.LogCatListener
-import com.malinskiy.marathon.android.executor.listeners.NoOpTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.ProgressTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.TestRunResultsListener
-import com.malinskiy.marathon.android.executor.listeners.screenshot.ScreenCapturerTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.video.ScreenRecorderTestRunListener
-import com.malinskiy.marathon.android.safeClearPackage
-import com.malinskiy.marathon.device.DeviceFeature
-import com.malinskiy.marathon.device.DevicePoolId
+import com.malinskiy.marathon.android.*
 import com.malinskiy.marathon.exceptions.DeviceLostException
 import com.malinskiy.marathon.exceptions.TestBatchExecutionException
 import com.malinskiy.marathon.execution.Configuration
-import com.malinskiy.marathon.execution.TestBatchResults
-import com.malinskiy.marathon.execution.progress.ProgressReporter
-import com.malinskiy.marathon.io.FileManager
 import com.malinskiy.marathon.log.MarathonLogging
-import com.malinskiy.marathon.report.attachment.AttachmentProvider
-import com.malinskiy.marathon.report.logs.LogWriter
-import com.malinskiy.marathon.test.MetaProperty
-import com.malinskiy.marathon.test.Test
-import com.malinskiy.marathon.test.TestBatch
-import com.malinskiy.marathon.test.toTestName
-import kotlinx.coroutines.CompletableDeferred
+import com.malinskiy.marathon.test.*
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-val JUNIT_IGNORE_META_PROPERY = MetaProperty("org.junit.Ignore")
 
 class AndroidDeviceTestRunner(private val device: AndroidDevice) {
 
     private val logger = MarathonLogging.logger("AndroidDeviceTestRunner")
 
     fun execute(configuration: Configuration,
-                rawTestBatch: TestBatch,
+                testBatch: TestBatch,
                 listener: ITestRunListener) {
-
-        val ignoredTests = rawTestBatch.tests.filter { it.metaProperties.contains(JUNIT_IGNORE_META_PROPERY) }
-        val testBatch = TestBatch(rawTestBatch.tests - ignoredTests)
 
         val androidConfiguration = configuration.vendorConfiguration as AndroidConfiguration
         val info = ApkParser().parseInstrumentationInfo(androidConfiguration.testApplicationOutput)
@@ -58,7 +31,7 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
 
         try {
             clearData(androidConfiguration, info)
-            notifyIgnoredTest(ignoredTests, listener)
+//            notifyIgnoredTest(ignoredTests, listener)
             runner.run(listener)
         } catch (e: ShellCommandUnresponsiveException) {
             logger.warn("Device takes too long to answer to a command")
@@ -81,14 +54,14 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
         }
     }
 
-    private fun notifyIgnoredTest(ignoredTests: List<Test>, listeners: ITestRunListener) {
-        ignoredTests.forEach {
-            val identifier = it.toTestIdentifier()
-            listeners.testStarted(identifier)
-            listeners.testIgnored(identifier)
-            listeners.testEnded(identifier, hashMapOf())
-        }
-    }
+//    private fun notifyIgnoredTest(ignoredTests: List<Test>, listeners: ITestRunListener) {
+//        ignoredTests.forEach {
+//            val identifier = it.toTestIdentifier()
+//            listeners.testStarted(identifier)
+//            listeners.testIgnored(identifier)
+//            listeners.testEnded(identifier, hashMapOf())
+//        }
+//    }
 
     private fun clearData(androidConfiguration: AndroidConfiguration, info: InstrumentationInfo) {
         if (androidConfiguration.applicationPmClear) {
@@ -116,9 +89,7 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
 
         logger.debug { "tests = ${tests.toList()}" }
 
-        val ddmlibMaxTimeToOutputResponse =
-                Math.min(configuration.testOutputTimeoutMillis * testBatch.tests.size,
-                        configuration.testBatchTimeoutMillis)
+        val ddmlibMaxTimeToOutputResponse = testBatch.calculateTimeout(configuration)
 
         runner.setRunName("TestRunName")
         runner.setMaxTimeToOutputResponse(ddmlibMaxTimeToOutputResponse, TimeUnit.MILLISECONDS)

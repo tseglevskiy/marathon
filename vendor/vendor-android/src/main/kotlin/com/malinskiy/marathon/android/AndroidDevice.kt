@@ -20,6 +20,7 @@ import com.malinskiy.marathon.device.DeviceFeature
 import com.malinskiy.marathon.device.DevicePoolId
 import com.malinskiy.marathon.device.NetworkState
 import com.malinskiy.marathon.device.OperatingSystem
+import com.malinskiy.marathon.exceptions.DeviceLostException
 import com.malinskiy.marathon.execution.Configuration
 import com.malinskiy.marathon.execution.TestBatchResults
 import com.malinskiy.marathon.execution.progress.ProgressReporter
@@ -28,10 +29,9 @@ import com.malinskiy.marathon.log.MarathonLogging
 import com.malinskiy.marathon.report.attachment.AttachmentProvider
 import com.malinskiy.marathon.report.logs.LogWriter
 import com.malinskiy.marathon.test.TestBatch
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.newFixedThreadPoolContext
+import com.malinskiy.marathon.test.calculateTimeout
+import kotlinx.coroutines.*
+import java.lang.System.currentTimeMillis
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 
@@ -136,11 +136,33 @@ class AndroidDevice(val ddmsDevice: IDevice,
                                  deferred: CompletableDeferred<TestBatchResults>,
                                  progressReporter: ProgressReporter) {
 
+        val listeners = async {
+            createListeners(configuration, devicePoolId, testBatch, deferred, progressReporter)
+        }.await()
+
+        val runner = async {
+            AndroidDeviceTestRunner(this@AndroidDevice)
+        }.await()
+
         val deferredResult = async {
-            val listeners = createListeners(configuration, devicePoolId, testBatch, deferred, progressReporter)
-            AndroidDeviceTestRunner(this@AndroidDevice).execute(configuration, testBatch, listeners)
+            runner.execute(configuration, testBatch, listeners)
         }
-        deferredResult.await()
+
+        val expectedTime: Long = testBatch
+                .calculateTimeout(configuration)
+                .run { this  + this / 20L } // +5%
+        logger.warn("HAPPY expected time for batch is $expectedTime ms")
+
+        val expectedFinish = currentTimeMillis() + expectedTime
+
+        while (deferredResult.isActive) {
+            delay(1000)
+            logger.warn("HAPPY tick ${expectedFinish - currentTimeMillis()}")
+
+            if (expectedFinish < currentTimeMillis()) {
+                throw DeviceLostException("HAPPY Time for batch exceeded")
+            }
+        }
     }
 
     private fun createListeners(configuration: Configuration,
@@ -189,10 +211,10 @@ class AndroidDevice(val ddmsDevice: IDevice,
     }
 
     private fun selectRecorderType(preferred: DeviceFeature?, features: Collection<DeviceFeature>) = when {
-            features.contains(preferred) -> preferred
-            features.contains(DeviceFeature.VIDEO) -> DeviceFeature.VIDEO
-            features.contains(DeviceFeature.SCREENSHOT) -> DeviceFeature.SCREENSHOT
-            else -> null
+        features.contains(preferred) -> preferred
+        features.contains(DeviceFeature.VIDEO) -> DeviceFeature.VIDEO
+        features.contains(DeviceFeature.SCREENSHOT) -> DeviceFeature.SCREENSHOT
+        else -> null
     }
 
     private fun prepareRecorderListener(feature: DeviceFeature, fileManager: FileManager, devicePoolId: DevicePoolId,

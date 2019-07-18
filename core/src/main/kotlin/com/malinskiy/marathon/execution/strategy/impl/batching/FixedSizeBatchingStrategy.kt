@@ -2,6 +2,7 @@ package com.malinskiy.marathon.execution.strategy.impl.batching
 
 import com.malinskiy.marathon.analytics.Analytics
 import com.malinskiy.marathon.execution.strategy.BatchingStrategy
+import com.malinskiy.marathon.log.MarathonLogging
 import com.malinskiy.marathon.test.Test
 import com.malinskiy.marathon.test.TestBatch
 import java.time.Instant
@@ -13,7 +14,11 @@ class FixedSizeBatchingStrategy(private val size: Int,
                                 private val timeLimit: Instant? = null,
                                 private val lastMileLength: Int = 0) : BatchingStrategy {
 
+    private val logger = MarathonLogging.logger("FixedSizeBatchingStrategy")
+
     override fun process(queue: Queue<Test>, analytics: Analytics): TestBatch {
+        logger.warn("HAPPY size $size lastMileLength $lastMileLength durationMillis $durationMillis")
+
         if(queue.size < lastMileLength && queue.isNotEmpty()) {
             //We optimize last mile by disabling batching completely.
             // This allows us to parallelize the test runs at the end instead of running batches in series
@@ -45,6 +50,9 @@ class FixedSizeBatchingStrategy(private val size: Int,
         if (duplicates.isNotEmpty()) {
             queue.addAll(duplicates)
         }
+
+        logger.warn("HAPPY batch ${result.size}")
+
         return TestBatch(result.toList())
     }
 

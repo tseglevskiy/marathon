@@ -15,8 +15,8 @@ import com.malinskiy.marathon.execution.strategy.impl.sorting.NoSortingStrategy
 import com.malinskiy.marathon.vendor.VendorConfiguration
 import java.io.File
 
-private const val DEFAULT_EXECUTION_TIMEOUT_MILLIS: Long = 900_000
-private const val DEFAULT_OUTPUT_TIMEOUT_MILLIS: Long = 60_000
+private const val DEFAULT_EXECUTION_TIMEOUT_MILLIS: Long = 900_000 // 15 min
+private const val DEFAULT_OUTPUT_TIMEOUT_MILLIS: Long = 60_000 // 1 min
 
 data class Configuration constructor(
         val name: String,
