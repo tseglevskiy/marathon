@@ -15,12 +15,8 @@ import com.malinskiy.marathon.execution.progress.ProgressReporter
 import com.malinskiy.marathon.execution.withRetry
 import com.malinskiy.marathon.log.MarathonLogging
 import com.malinskiy.marathon.test.TestBatch
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.properties.Delegates
 
@@ -91,45 +87,40 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             }
         }
         onTransition {
-            synchronized(lock) {
+            logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
 
-                logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
+            val validTransition = it as? StateMachine.Transition.Valid
+            if (validTransition !is StateMachine.Transition.Valid) {
+                logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
+                return@onTransition
+            }
 
-                val validTransition = it as? StateMachine.Transition.Valid
-                if (validTransition !is StateMachine.Transition.Valid) {
-                    if (it.event !is DeviceEvent.WakeUp) {
-                        logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
-                    }
-                    return@onTransition
+            val sideEffect = validTransition.sideEffect
+            when (sideEffect) {
+                DeviceAction.Initialize -> {
+                    initialize()
                 }
-
-                val sideEffect = validTransition.sideEffect
-                when (sideEffect) {
-                    DeviceAction.Initialize -> {
-                        initialize()
+                is DeviceAction.NotifyIsReady -> {
+                    sideEffect.result?.let {
+                        sendResults(it)
                     }
-                    is DeviceAction.NotifyIsReady -> {
-                        sideEffect.result?.let {
-                            sendResults(it)
-                        }
-                        notifyIsReady()
-                    }
-                    is DeviceAction.ExecuteBatch -> {
-                        executeBatch(sideEffect.batch, sideEffect.result)
-                    }
-                    is DeviceAction.Terminate -> {
-                        val batch = sideEffect.batch
-                        if (batch == null) {
+                    notifyIsReady()
+                }
+                is DeviceAction.ExecuteBatch -> {
+                    executeBatch(sideEffect.batch, sideEffect.result)
+                }
+                is DeviceAction.Terminate -> {
+                    val batch = sideEffect.batch
+                    if (batch == null) {
+                        terminate()
+                    } else {
+                        returnBatch(batch).invokeOnCompletion {
                             terminate()
-                        } else {
-                            returnBatch(batch).invokeOnCompletion {
-                                terminate()
-                            }
                         }
                     }
-                    null -> {
-                        // do nothing
-                    }
+                }
+                null -> {
+                    // do nothing
                 }
             }
         }
