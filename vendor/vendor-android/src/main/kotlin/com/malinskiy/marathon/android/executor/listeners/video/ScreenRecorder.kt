@@ -24,7 +24,7 @@ internal class ScreenRecorder(private val device: IDevice,
         val millis = measureTimeMillis {
             device.safeStartScreenRecorder(remoteFilePath, options, receiver)
         }
-        logger.trace { "Recording finished in ${millis}ms $remoteFilePath" }
+        logger.trace { "Recording passed in ${millis}ms $remoteFilePath" }
     }
 
     companion object {

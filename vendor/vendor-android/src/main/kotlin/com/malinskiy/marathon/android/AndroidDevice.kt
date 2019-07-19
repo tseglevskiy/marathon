@@ -70,7 +70,7 @@ class AndroidDevice(val ddmsDevice: IDevice,
         }
 
     /**
-     * We can only call this after the device finished booting
+     * We can only call this after the device passed booting
      */
     private val realSerialNumber: String by lazy {
         val marathonSerialProp: String = ddmsDevice.getProperty("marathon.serialno") ?: ""

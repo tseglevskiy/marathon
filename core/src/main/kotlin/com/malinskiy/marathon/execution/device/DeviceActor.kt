@@ -206,7 +206,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             try {
                 logger.warn("HAPPY ${device.serialNumber} batch started")
                 device.execute(configuration, devicePoolId, batch, result, progressReporter)
-                logger.warn("HAPPY ${device.serialNumber} batch finished")
+                logger.warn("HAPPY ${device.serialNumber} batch passed")
             } catch (e: DeviceLostException) {
                 logger.warn("HAPPY ${device.serialNumber} DeviceLostException")
                 logger.error(e) { "Critical error during execution" }

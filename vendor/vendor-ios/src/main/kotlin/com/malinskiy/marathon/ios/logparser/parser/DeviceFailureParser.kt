@@ -14,7 +14,7 @@ class DeviceFailureParser: StreamingLogParser {
         "Failed to terminate",
         "Failed to launch app with identifier",
         "Test runner exited before starting test execution",
-        "Early unexpected exit, operation never finished bootstrapping",
+        "Early unexpected exit, operation never passed bootstrapping",
         "Connection peer refused channel request",
         "CoreSimulatorService connection became invalid", // occurs in simctl output
         "Simulator services will no longer be available", // occurs in simctl output

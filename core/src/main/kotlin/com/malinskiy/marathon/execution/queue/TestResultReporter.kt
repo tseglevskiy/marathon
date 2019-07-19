@@ -89,7 +89,7 @@ class TestResultReporter(private val poolId: DevicePoolId,
         }
     }
 
-    fun testFinished(device: DeviceInfo, testResult: TestResult) {
+    fun testPassed(device: DeviceInfo, testResult: TestResult) {
         tests[testResult.test.toTestName()]?.transition(TestEvent.Passed(device, testResult))
     }
 

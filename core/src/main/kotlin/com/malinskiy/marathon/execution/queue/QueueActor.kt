@@ -18,6 +18,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import java.util.*
+import kotlin.collections.HashSet
 import kotlin.coroutines.CoroutineContext
 
 class QueueActor(configuration: Configuration,
@@ -35,6 +36,7 @@ class QueueActor(configuration: Configuration,
     private val sorting = configuration.sortingStrategy
 
     private val queue: Queue<Test> = PriorityQueue<Test>(sorting.process(analytics))
+    private val flakyPassed: MutableSet<Test> = HashSet()
     private val batching = configuration.batchingStrategy
     private val retry = configuration.retryStrategy
 
@@ -68,12 +70,12 @@ class QueueActor(configuration: Configuration,
     }
 
     private suspend fun onBatchCompleted(device: DeviceInfo, results: TestBatchResults) {
-        val finished = results.finished
+        val passed = results.passed
         val failed = results.failed
         val uncompleted = results.uncompleted
         logger.debug { "handle test results ${device.serialNumber}" }
-        if (finished.isNotEmpty()) {
-            handleFinishedTests(finished, device)
+        if (passed.isNotEmpty()) {
+            handlePassedTests(passed, device)
         }
         if (failed.isNotEmpty()) {
             handleFailedTests(failed, device)
@@ -94,25 +96,31 @@ class QueueActor(configuration: Configuration,
     }
 
     private fun returnTests(tests: Collection<Test>) {
-        queue.addAll(tests)
+        tests
+                .filter { !flakyPassed.contains(it) }
+                .let { queue.addAll(it) }
     }
 
     private fun onTerminate() {
         close()
     }
 
-    private fun handleFinishedTests(finished: Collection<TestResult>, device: DeviceInfo) {
-        finished.filter { testShard.flakyTests.contains(it.test) }.let {
-            it.forEach {
-                val oldSize = queue.size
-                queue.removeAll(listOf(it.test))
-                val diff = oldSize - queue.size
-                testResultReporter.removeTest(it.test, diff)
-                progressReporter.removeTests(poolId, diff)
-            }
-        }
+    private fun handlePassedTests(finished: Collection<TestResult>, device: DeviceInfo) {
+        finished
+                .filter { testShard.flakyTests.contains(it.test) }
+                .forEach {
+                    val oldSize = queue.size
+                    listOf(it.test).let { list ->
+                        queue.removeAll(list)
+                        flakyPassed.addAll(list)
+                    }
+                    val diff = oldSize - queue.size
+                    testResultReporter.removeTest(it.test, diff)
+                    progressReporter.removeTests(poolId, diff)
+                }
+
         finished.forEach {
-            testResultReporter.testFinished(device, it)
+            testResultReporter.testPassed(device, it)
         }
     }
 

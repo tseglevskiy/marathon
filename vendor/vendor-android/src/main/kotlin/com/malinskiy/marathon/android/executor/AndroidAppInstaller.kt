@@ -32,7 +32,7 @@ class AndroidAppInstaller(configuration: Configuration) {
         }
         logger.debug { "Installing instrumentation package to ${device.serialNumber}" }
         reinstall(device, applicationInfo.instrumentationPackage, androidConfiguration.testApplicationOutput)
-        logger.debug { "Prepare installation finished for ${device.serialNumber}" }
+        logger.debug { "Prepare installation passed for ${device.serialNumber}" }
     }
 
     @Suppress("TooGenericExceptionThrown")

@@ -94,7 +94,7 @@ internal class ScreenRecorderTestRunListener(private val fileManager: FileManage
         val millis = measureTimeMillis {
             device.fileManager.pullFile(remoteFilePath, localVideoFile.toString())
         }
-        logger.trace { "Pulling finished in ${millis}ms $remoteFilePath " }
+        logger.trace { "Pulling passed in ${millis}ms $remoteFilePath " }
         attachmentListeners.forEach { it.onAttachment(test.toTest(), Attachment(localVideoFile, AttachmentType.VIDEO)) }
     }
 

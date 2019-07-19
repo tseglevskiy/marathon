@@ -35,7 +35,7 @@ class ScreenRecordingListener(private val fileManager: FileManager,
 
     override fun batchFinished() {
         if(screenRecorder != null) {
-            logger.error { "Something wrong. Recorder didn't finish but test batch already finished" }
+            logger.error { "Something wrong. Recorder didn't finish but test batch already passed" }
         }
     }
 }

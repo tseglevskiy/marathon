@@ -203,7 +203,7 @@ class Marathon(val configuration: Configuration) {
     }
 
     private fun printCliReport(summary: Summary, executionTime: Long) {
-        val cliReportBuilder = StringBuilder().appendln("Marathon run finished:")
+        val cliReportBuilder = StringBuilder().appendln("Marathon run passed:")
         summary.pools.forEach {
             cliReportBuilder.appendln("Device pool ${it.poolId.name}: ${it.passed} passed, ${it.failed} failed, ${it.ignored} ignored tests")
         }
