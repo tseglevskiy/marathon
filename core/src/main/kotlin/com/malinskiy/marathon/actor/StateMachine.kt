@@ -36,7 +36,6 @@ class StateMachine<STATE : Any, EVENT : Any, SIDE_EFFECT : Any> private construc
 ) {
 
     private val stateRef = AtomicReference<STATE>(graph.initialState)
-    private val lock = Object()
 
     val state: STATE
         get() = stateRef.get()
@@ -93,9 +92,7 @@ class StateMachine<STATE : Any, EVENT : Any, SIDE_EFFECT : Any> private construc
     }
 
     private fun Transition<STATE, EVENT, SIDE_EFFECT>.notifyOnTransition() {
-        synchronized(lock) {
-            graph.onTransitionListeners.forEach { it(this) }
-        }
+        graph.onTransitionListeners.forEach { it(this) }
     }
 
     @Suppress("UNUSED")

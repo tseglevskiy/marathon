@@ -33,6 +33,8 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                   context: CoroutineContext) :
         Actor<DeviceEvent>(parent = parent, context = context) {
 
+    val lock = Object()
+
     private val state = StateMachine.create<DeviceState, DeviceEvent, DeviceAction> {
         initialState(DeviceState.Connected)
         state<DeviceState.Connected> {
@@ -89,37 +91,40 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             }
         }
         onTransition {
-            logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
+            synchronized(lock) {
 
-            val validTransition = it as? StateMachine.Transition.Valid
-            if (validTransition !is StateMachine.Transition.Valid) {
-                if (it.event !is DeviceEvent.WakeUp) {
-                    logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
-                }
-                return@onTransition
-            }
+                logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
 
-            val sideEffect = validTransition.sideEffect
-            when (sideEffect) {
-                DeviceAction.Initialize -> {
-                    initialize()
-                }
-                is DeviceAction.NotifyIsReady -> {
-                    sideEffect.result?.let {
-                        sendResults(it)
+                val validTransition = it as? StateMachine.Transition.Valid
+                if (validTransition !is StateMachine.Transition.Valid) {
+                    if (it.event !is DeviceEvent.WakeUp) {
+                        logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
                     }
-                    notifyIsReady()
+                    return@onTransition
                 }
-                is DeviceAction.ExecuteBatch -> {
-                    executeBatch(sideEffect.batch, sideEffect.result)
-                }
-                is DeviceAction.Terminate -> {
-                    val batch = sideEffect.batch
-                    if (batch == null) {
-                        terminate()
-                    } else {
-                        returnBatch(batch).invokeOnCompletion {
+
+                val sideEffect = validTransition.sideEffect
+                when (sideEffect) {
+                    DeviceAction.Initialize -> {
+                        initialize()
+                    }
+                    is DeviceAction.NotifyIsReady -> {
+                        sideEffect.result?.let {
+                            sendResults(it)
+                        }
+                        notifyIsReady()
+                    }
+                    is DeviceAction.ExecuteBatch -> {
+                        executeBatch(sideEffect.batch, sideEffect.result)
+                    }
+                    is DeviceAction.Terminate -> {
+                        val batch = sideEffect.batch
+                        if (batch == null) {
                             terminate()
+                        } else {
+                            returnBatch(batch).invokeOnCompletion {
+                                terminate()
+                            }
                         }
                     }
                 }
@@ -213,7 +218,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 state.transition(DeviceEvent.Terminate)
             } catch (e: DeviceTimeoutException) {
                 logger.warn("HAPPY ${device.serialNumber} DeviceTimeoutException")
-                logger.error(e) { "Device Get Stuck" }
+                logger.error(e) { "Device got stuck" }
                 returnBatch(batch)
                 state.transition(DeviceEvent.Initialize)
             } catch (e: TestBatchExecutionException) {
