@@ -45,7 +45,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             }
         }
         state<DeviceState.Initializing> {
-            on<DeviceEvent.Complete> {
+            on<DeviceEvent.InitializingComplete> {
                 transitionTo(DeviceState.Ready, DeviceAction.NotifyIsReady())
             }
             on<DeviceEvent.Terminate> {
@@ -71,7 +71,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             on<DeviceEvent.Terminate> {
                 transitionTo(DeviceState.Terminated, DeviceAction.Terminate(testBatch))
             }
-            on<DeviceEvent.Complete> {
+            on<DeviceEvent.RunningComplete> {
                 transitionTo(DeviceState.Ready, DeviceAction.NotifyIsReady(this.result))
             }
             on<DeviceEvent.Initialize> {
@@ -81,19 +81,21 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 dontTransition()
             }
         }
-        state<DeviceState.Terminated> {
-            on<DeviceEvent.Complete> {
-                dontTransition()
-            }
-        }
+//        state<DeviceState.Terminated> {
+//            on<DeviceEvent.Complete> {
+//                dontTransition()
+//            }
+//        }
         onTransition {
-            logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
 
             val validTransition = it as? StateMachine.Transition.Valid
             if (validTransition !is StateMachine.Transition.Valid) {
                 logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
+                logger.error { "HAPPY Invalid transition from ${it.fromState} event ${it.event}" }
                 return@onTransition
             }
+
+            logger.warn("HAPPY ${device.serialNumber} transition from ${validTransition.fromState} to ${validTransition.toState} by event ${validTransition.event}")
 
             val sideEffect = validTransition.sideEffect
             when (sideEffect) {
@@ -159,9 +161,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
 
     private var job by Delegates.observable<Job?>(null) { _, _, newValue ->
         newValue?.invokeOnCompletion {
-            if (it == null) {
-                state.transition(DeviceEvent.Complete)
-            } else {
+            if (it != null) {
                 logger.error(it) { "Error ${it.message}" }
                 state.transition(DeviceEvent.Terminate)
                 terminate()
@@ -195,6 +195,8 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
 
                 state.transition(DeviceEvent.Terminate)
             }
+
+            state.transition(DeviceEvent.InitializingComplete)
         }
     }
 
@@ -219,6 +221,8 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 logger.warn("HAPPY ${device.serialNumber} TestBatchExecutionException")
                 returnBatch(batch)
             }
+
+            state.transition(DeviceEvent.RunningComplete)
         }
     }
 
