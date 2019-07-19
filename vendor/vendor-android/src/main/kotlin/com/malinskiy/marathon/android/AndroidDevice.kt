@@ -6,21 +6,11 @@ import com.malinskiy.marathon.analytics.tracker.device.InMemoryDeviceTracker
 import com.malinskiy.marathon.android.exception.InvalidSerialConfiguration
 import com.malinskiy.marathon.android.executor.AndroidAppInstaller
 import com.malinskiy.marathon.android.executor.AndroidDeviceTestRunner
-import com.malinskiy.marathon.android.executor.listeners.CompositeTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.DebugTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.LogCatListener
-import com.malinskiy.marathon.android.executor.listeners.NoOpTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.ProgressTestRunListener
-import com.malinskiy.marathon.android.executor.listeners.TestRunResultsListener
+import com.malinskiy.marathon.android.executor.listeners.*
 import com.malinskiy.marathon.android.executor.listeners.screenshot.ScreenCapturerTestRunListener
 import com.malinskiy.marathon.android.executor.listeners.video.ScreenRecorderTestRunListener
 import com.malinskiy.marathon.android.serial.SerialStrategy
-import com.malinskiy.marathon.device.Device
-import com.malinskiy.marathon.device.DeviceFeature
-import com.malinskiy.marathon.device.DevicePoolId
-import com.malinskiy.marathon.device.NetworkState
-import com.malinskiy.marathon.device.OperatingSystem
-import com.malinskiy.marathon.exceptions.DeviceLostException
+import com.malinskiy.marathon.device.*
 import com.malinskiy.marathon.exceptions.DeviceTimeoutException
 import com.malinskiy.marathon.execution.Configuration
 import com.malinskiy.marathon.execution.TestBatchResults
@@ -198,11 +188,13 @@ class AndroidDevice(val ddmsDevice: IDevice,
     }
 
     override suspend fun prepare(configuration: Configuration) {
-        InMemoryDeviceTracker.trackDevicePreparing(this) {
-            AndroidAppInstaller(configuration).prepareInstallation(this@AndroidDevice)
-            fileManager.removeRemoteDirectory()
-            fileManager.createRemoteDirectory()
-            clearLogcat(ddmsDevice)
+        withContext(Dispatchers.IO) {
+            InMemoryDeviceTracker.trackDevicePreparing(this@AndroidDevice) {
+                AndroidAppInstaller(configuration).prepareInstallation(this@AndroidDevice)
+                fileManager.removeRemoteDirectory()
+                fileManager.createRemoteDirectory()
+                clearLogcat(ddmsDevice)
+            }
         }
     }
 

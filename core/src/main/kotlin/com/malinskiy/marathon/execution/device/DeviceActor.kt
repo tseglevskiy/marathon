@@ -81,11 +81,11 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 dontTransition()
             }
         }
-//        state<DeviceState.Terminated> {
-//            on<DeviceEvent.Complete> {
-//                dontTransition()
-//            }
-//        }
+        state<DeviceState.Terminated> {
+            on<DeviceEvent.WakeUp> {
+                dontTransition()
+            }
+        }
         onTransition {
 
             val validTransition = it as? StateMachine.Transition.Valid
