@@ -21,6 +21,7 @@ import com.malinskiy.marathon.device.DevicePoolId
 import com.malinskiy.marathon.device.NetworkState
 import com.malinskiy.marathon.device.OperatingSystem
 import com.malinskiy.marathon.exceptions.DeviceLostException
+import com.malinskiy.marathon.exceptions.DeviceTimeoutException
 import com.malinskiy.marathon.execution.Configuration
 import com.malinskiy.marathon.execution.TestBatchResults
 import com.malinskiy.marathon.execution.progress.ProgressReporter
@@ -150,17 +151,19 @@ class AndroidDevice(val ddmsDevice: IDevice,
 
         val expectedTime: Long = testBatch
                 .calculateTimeout(configuration)
-                .run { this  + this / 20L } // +5%
+                .run { this + this / 10L } // +10%
         logger.warn("HAPPY expected time for batch is $expectedTime ms")
 
         val expectedFinish = currentTimeMillis() + expectedTime
 
         while (deferredResult.isActive) {
             delay(1000)
-            logger.warn("HAPPY tick ${expectedFinish - currentTimeMillis()}")
+//            logger.warn("HAPPY tick ${expectedFinish - currentTimeMillis()}")
 
             if (expectedFinish < currentTimeMillis()) {
-                throw DeviceLostException("HAPPY Time for batch exceeded")
+                listeners.invalidate()
+                deferredResult.cancel()
+                throw DeviceTimeoutException("HAPPY Time for batch exceeded")
             }
         }
     }
@@ -196,13 +199,10 @@ class AndroidDevice(val ddmsDevice: IDevice,
 
     override suspend fun prepare(configuration: Configuration) {
         InMemoryDeviceTracker.trackDevicePreparing(this) {
-            val deferred = async {
-                AndroidAppInstaller(configuration).prepareInstallation(this@AndroidDevice)
-                fileManager.removeRemoteDirectory()
-                fileManager.createRemoteDirectory()
-                clearLogcat(ddmsDevice)
-            }
-            deferred.await()
+            AndroidAppInstaller(configuration).prepareInstallation(this@AndroidDevice)
+            fileManager.removeRemoteDirectory()
+            fileManager.createRemoteDirectory()
+            clearLogcat(ddmsDevice)
         }
     }
 

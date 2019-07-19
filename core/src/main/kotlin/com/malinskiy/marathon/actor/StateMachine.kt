@@ -92,7 +92,9 @@ class StateMachine<STATE : Any, EVENT : Any, SIDE_EFFECT : Any> private construc
     }
 
     private fun Transition<STATE, EVENT, SIDE_EFFECT>.notifyOnTransition() {
-        graph.onTransitionListeners.forEach { it(this) }
+        synchronized(this) {
+            graph.onTransitionListeners.forEach { it(this) }
+        }
     }
 
     @Suppress("UNUSED")

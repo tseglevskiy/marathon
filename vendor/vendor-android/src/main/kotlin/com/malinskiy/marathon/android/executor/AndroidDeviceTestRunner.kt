@@ -28,7 +28,6 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
         val info = ApkParser().parseInstrumentationInfo(androidConfiguration.testApplicationOutput)
         val runner = prepareTestRunner(configuration, androidConfiguration, info, testBatch)
 
-
         try {
             clearData(androidConfiguration, info)
 //            notifyIgnoredTest(ignoredTests, listener)

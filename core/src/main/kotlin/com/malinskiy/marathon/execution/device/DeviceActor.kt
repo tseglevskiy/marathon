@@ -5,6 +5,7 @@ import com.malinskiy.marathon.actor.StateMachine
 import com.malinskiy.marathon.device.Device
 import com.malinskiy.marathon.device.DevicePoolId
 import com.malinskiy.marathon.exceptions.DeviceLostException
+import com.malinskiy.marathon.exceptions.DeviceTimeoutException
 import com.malinskiy.marathon.exceptions.TestBatchExecutionException
 import com.malinskiy.marathon.execution.Configuration
 import com.malinskiy.marathon.execution.DevicePoolMessage
@@ -75,6 +76,9 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             on<DeviceEvent.Complete> {
                 transitionTo(DeviceState.Ready, DeviceAction.NotifyIsReady(this.result))
             }
+            on<DeviceEvent.Initialize> {
+                transitionTo(DeviceState.Initializing, DeviceAction.Initialize)
+            }
             on<DeviceEvent.WakeUp> {
                 dontTransition()
             }
@@ -85,6 +89,8 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             }
         }
         onTransition {
+            logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState} by event ${it.event}")
+
             val validTransition = it as? StateMachine.Transition.Valid
             if (validTransition !is StateMachine.Transition.Valid) {
                 if (it.event !is DeviceEvent.WakeUp) {
@@ -92,6 +98,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 }
                 return@onTransition
             }
+
             val sideEffect = validTransition.sideEffect
             when (sideEffect) {
                 DeviceAction.Initialize -> {
@@ -119,6 +126,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
             }
         }
     }
+
     private val logger = MarathonLogging.logger("DevicePool[${devicePoolId.name}]_DeviceActor[${device.serialNumber}]")
 
     val isAvailable: Boolean
@@ -169,14 +177,23 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 withRetry(30, 10000) {
                     if (isActive) {
                         try {
+                            logger.warn { "HAPPY gonna prepare ${device.serialNumber}" }
+
                             device.prepare(configuration)
+                            logger.warn { "HAPPY prepared ${device.serialNumber}" }
                         } catch (e: Exception) {
+                            logger.warn { "HAPPY another shit happens ${device.serialNumber} ${e}" }
                             logger.debug { "device ${device.serialNumber} initialization failed. Retrying" }
                             throw e
                         }
+                    } else {
+                        logger.warn { "HAPPY inactive ${device.serialNumber}" }
+
                     }
                 }
             } catch (e: Exception) {
+                logger.warn { "HAPPY shit happens ${device.serialNumber} ${e}" }
+
                 state.transition(DeviceEvent.Terminate)
             }
         }
@@ -186,11 +203,21 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
         logger.debug { "executeBatch ${device.serialNumber}" }
         job = async {
             try {
+                logger.warn("HAPPY ${device.serialNumber} batch started")
                 device.execute(configuration, devicePoolId, batch, result, progressReporter)
+                logger.warn("HAPPY ${device.serialNumber} batch finished")
             } catch (e: DeviceLostException) {
+                logger.warn("HAPPY ${device.serialNumber} DeviceLostException")
                 logger.error(e) { "Critical error during execution" }
+                returnBatch(batch)
                 state.transition(DeviceEvent.Terminate)
+            } catch (e: DeviceTimeoutException) {
+                logger.warn("HAPPY ${device.serialNumber} DeviceTimeoutException")
+                logger.error(e) { "Device Get Stuck" }
+                returnBatch(batch)
+                state.transition(DeviceEvent.Initialize)
             } catch (e: TestBatchExecutionException) {
+                logger.warn("HAPPY ${device.serialNumber} TestBatchExecutionException")
                 returnBatch(batch)
             }
         }
