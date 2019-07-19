@@ -127,6 +127,9 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                             }
                         }
                     }
+                    null -> {
+                        // do nothing
+                    }
                 }
             }
         }
