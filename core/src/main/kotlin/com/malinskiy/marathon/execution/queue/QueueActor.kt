@@ -69,6 +69,8 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun onBatchCompleted(device: DeviceInfo, results: TestBatchResults) {
+        logger.warn { "HAPPY onBatchCompleted $results" }
+
         val (uncompletedRetryQuotaExceeded, uncompleted) = results.uncompleted.partition {
             (uncompletedTestsRetryCount[it.test] ?: 0) >= configuration.uncompletedTestRetryQuota
         }
@@ -149,20 +151,33 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun onRequestBatch(device: DeviceInfo) {
         logger.debug { "request next batch for device ${device.serialNumber}" }
-        val queueIsEmpty = queue.isEmpty()
-        if (queue.isNotEmpty() && !activeBatches.containsKey(device.serialNumber)) {
+
+        activeBatches.keys.forEach {
+            logger.warn { "HAPPY there is active batch for $it" }
+        }
+
+        if (queue.isNotEmpty()) {
+            if (activeBatches.containsKey(device.serialNumber)) {
+                logger.warn { "HAPPY device is still busy ${device.serialNumber}" }
+                return
+            }
+
+            logger.warn { "HAPPY sending next batch for device ${device.serialNumber}" }
             logger.debug { "sending next batch for device ${device.serialNumber}" }
             sendBatch(device)
             return
         }
-        if (queueIsEmpty && activeBatches.isEmpty()) {
+
+        // queue is empty
+        if (activeBatches.isEmpty()) {
             pool.send(DevicePoolMessage.FromQueue.Terminated)
             onTerminate()
-        } else {
-            logger.debug {
-                "queue is empty but there are active batches present for " +
-                        "${activeBatches.keys.joinToString { it }}"
-            }
+            return
+        }
+
+        logger.debug {
+            "queue is empty but there are active batches present for " +
+                    "${activeBatches.keys.joinToString { it }}"
         }
     }
 

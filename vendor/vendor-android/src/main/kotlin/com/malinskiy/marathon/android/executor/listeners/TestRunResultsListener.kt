@@ -58,11 +58,7 @@ class TestRunResultsListener(private val testBatch: TestBatch,
             it.test.method != "null"
         }
 
-        val finished = nonNullTestResults.filter {
-            results[it.test.identifier()]?.isSuccessful() ?: false
-        }
-
-        val failed = nonNullTestResults.filterNot {
+        val (finished, failed) = nonNullTestResults.partition {
             results[it.test.identifier()]?.isSuccessful() ?: false
         }
 
@@ -73,11 +69,18 @@ class TestRunResultsListener(private val testBatch: TestBatch,
                 .values
                 .createUncompletedTestResults(runResult, device)
 
-        if (uncompleted.isNotEmpty()) {
-            uncompleted.forEach {
-                logger.warn { "uncompleted = ${it.test.toTestName()}, ${device.serialNumber}" }
-            }
+        uncompleted.forEach {
+            logger.warn { "uncompleted = ${it.test.toTestName()}, ${device.serialNumber}" }
+            logger.warn { "HAPPY uncompleted = ${it.test.toTestName()}, ${device.serialNumber}" }
         }
+        finished.forEach {
+            logger.warn { "HAPPY finished = ${it.test.toTestName()}, ${device.serialNumber}" }
+        }
+        failed.forEach {
+            logger.warn { "HAPPY failed = ${it.test.toTestName()}, ${device.serialNumber}" }
+        }
+
+
 
         deferred.complete(TestBatchResults(device, finished, failed, uncompleted))
     }
