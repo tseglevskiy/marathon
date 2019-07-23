@@ -73,12 +73,12 @@ class QueueActor(private val configuration: Configuration,
             (uncompletedTestsRetryCount[it.test] ?: 0) >= configuration.uncompletedTestRetryQuota
         }
 
-        val finished = results.finished
+        val passed = results.passed
         val failed = results.failed + uncompletedRetryQuotaExceeded
 
         logger.debug { "handle test results ${device.serialNumber}" }
-        if (finished.isNotEmpty()) {
-            handleFinishedTests(finished, device)
+        if (passed.isNotEmpty()) {
+            handleFinishedTests(passed, device)
         }
         if (failed.isNotEmpty()) {
             handleFailedTests(failed, device)
