@@ -22,6 +22,7 @@ import com.malinskiy.marathon.report.debug.timeline.TimelineSummaryProvider
 import com.malinskiy.marathon.report.html.HtmlSummaryPrinter
 import com.malinskiy.marathon.report.internal.DeviceInfoReporter
 import com.malinskiy.marathon.report.internal.TestResultReporter
+import com.malinskiy.marathon.test.MetaProperty
 import com.malinskiy.marathon.test.Test
 import com.malinskiy.marathon.test.toTestName
 import com.malinskiy.marathon.usageanalytics.TrackActionType
@@ -34,6 +35,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 
 private val log = MarathonLogging.logger {}
+
+val JUNIT_IGNORE_META_PROPERY = MetaProperty("org.junit.Ignore")
 
 class Marathon(val configuration: Configuration) {
 
@@ -176,6 +179,7 @@ class Marathon(val configuration: Configuration) {
         }
         configuration.filteringConfiguration.whitelist.forEach { tests = it.filter(tests) }
         configuration.filteringConfiguration.blacklist.forEach { tests = it.filterNot(tests) }
+        tests = tests.filter { !it.metaProperties.contains(JUNIT_IGNORE_META_PROPERY) } // TODO wrong place, need generic solution
         return tests
     }
 

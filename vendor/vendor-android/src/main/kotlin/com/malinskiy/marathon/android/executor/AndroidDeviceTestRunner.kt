@@ -38,18 +38,18 @@ import kotlinx.coroutines.CompletableDeferred
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-val JUNIT_IGNORE_META_PROPERY = MetaProperty("org.junit.Ignore")
+//val JUNIT_IGNORE_META_PROPERY = MetaProperty("org.junit.Ignore")
 
 class AndroidDeviceTestRunner(private val device: AndroidDevice) {
 
     private val logger = MarathonLogging.logger("AndroidDeviceTestRunner")
 
     fun execute(configuration: Configuration,
-                rawTestBatch: TestBatch,
+                testBatch: TestBatch,
                 listener: ITestRunListener) {
 
-        val ignoredTests = rawTestBatch.tests.filter { it.metaProperties.contains(JUNIT_IGNORE_META_PROPERY) }
-        val testBatch = TestBatch(rawTestBatch.tests - ignoredTests)
+//        val ignoredTests = rawTestBatch.tests.filter { it.metaProperties.contains(JUNIT_IGNORE_META_PROPERY) }
+//        val testBatch = TestBatch(rawTestBatch.tests - ignoredTests)
 
         val androidConfiguration = configuration.vendorConfiguration as AndroidConfiguration
         val info = ApkParser().parseInstrumentationInfo(androidConfiguration.testApplicationOutput)
@@ -58,7 +58,7 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
 
         try {
             clearData(androidConfiguration, info)
-            notifyIgnoredTest(ignoredTests, listener)
+//            notifyIgnoredTest(ignoredTests, listener)
             runner.run(listener)
         } catch (e: ShellCommandUnresponsiveException) {
             logger.warn("Test got stuck. You can increase the timeout in settings if it's too strict")
