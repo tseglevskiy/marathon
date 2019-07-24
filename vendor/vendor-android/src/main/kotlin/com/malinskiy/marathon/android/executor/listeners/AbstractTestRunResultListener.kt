@@ -9,56 +9,56 @@ abstract class AbstractTestRunResultListener : NoOpTestRunListener() {
     private var active = true
 
     override fun testRunStarted(runName: String, testCount: Int) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testRunStarted(runName, testCount)
         }
 
     }
 
     override fun testStarted(test: TestIdentifier) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testStarted(test)
         }
     }
 
     override fun testFailed(test: TestIdentifier, trace: String) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testFailed(test, trace)
         }
     }
 
     override fun testAssumptionFailure(test: TestIdentifier, trace: String) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testAssumptionFailure(test, trace)
         }
     }
 
     override fun testIgnored(test: TestIdentifier) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testIgnored(test)
         }
     }
 
     override fun testEnded(test: TestIdentifier, testMetrics: Map<String, String>) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testEnded(test, testMetrics)
         }
     }
 
     override fun testRunFailed(errorMessage: String) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testRunFailed(errorMessage)
         }
     }
 
     override fun testRunStopped(elapsedTime: Long) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) runResult.testRunStopped(elapsedTime)
         }
     }
 
     override fun testRunEnded(elapsedTime: Long, runMetrics: Map<String, String>) {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) {
                 runResult.testRunEnded(elapsedTime, runMetrics)
                 handleTestRunResults(runResult)
@@ -69,7 +69,7 @@ abstract class AbstractTestRunResultListener : NoOpTestRunListener() {
     abstract fun handleTestRunResults(runResult: DdmLibTestRunResult)
 
     fun forceEnd() {
-        synchronized(active) {
+        synchronized(runResult) {
             if (active) {
                 active = false
                 handleTestRunResults(runResult)
