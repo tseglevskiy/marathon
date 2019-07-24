@@ -62,9 +62,9 @@ class QueueActor(private val configuration: Configuration,
             is QueueMessage.Completed -> {
                 onBatchCompleted(msg.device, msg.results)
             }
-            is QueueMessage.ReturnBatch -> {
-                onReturnBatch(msg.device, msg.batch)
-            }
+//            is QueueMessage.ReturnBatch -> {
+//                onReturnBatch(msg.device, msg.batch)
+//            }
         }
     }
 
@@ -94,14 +94,14 @@ class QueueActor(private val configuration: Configuration,
         activeBatches.remove(device.serialNumber)
     }
 
-    private suspend fun onReturnBatch(device: DeviceInfo, batch: TestBatch) {
-        logger.debug { "onReturnBatch ${device.serialNumber}" }
-        returnTests(batch.tests)
-        activeBatches.remove(device.serialNumber)
-        if (queue.isNotEmpty()) {
-            pool.send(FromQueue.Notify)
-        }
-    }
+//    private suspend fun onReturnBatch(device: DeviceInfo, batch: TestBatch) {
+//        logger.debug { "onReturnBatch ${device.serialNumber}" }
+//        returnTests(batch.tests)
+//        activeBatches.remove(device.serialNumber)
+//        if (queue.isNotEmpty()) {
+//            pool.send(FromQueue.Notify)
+//        }
+//    }
 
     private fun returnTests(tests: Collection<Test>) {
         queue.addAll(tests)
@@ -193,7 +193,7 @@ sealed class QueueMessage {
     data class RequestBatch(val device: DeviceInfo) : QueueMessage()
     data class IsEmpty(val deferred: CompletableDeferred<Boolean>) : QueueMessage()
     data class Completed(val device: DeviceInfo, val results: TestBatchResults) : QueueMessage()
-    data class ReturnBatch(val device: DeviceInfo, val batch: TestBatch) : QueueMessage()
+//    data class ReturnBatch(val device: DeviceInfo, val batch: TestBatch) : QueueMessage()
 
     object Terminate : QueueMessage()
 }
