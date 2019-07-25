@@ -78,14 +78,14 @@ class AndroidDeviceTestRunner(private val device: AndroidDevice) {
         }
     }
 //
-//    private fun notifyIgnoredTest(ignoredTests: List<Test>, listeners: ITestRunListener) {
-//        ignoredTests.forEach {
-//            val identifier = it.toTestIdentifier()
-//            listeners.testStarted(identifier)
-//            listeners.testIgnored(identifier)
-//            listeners.testEnded(identifier, hashMapOf())
-//        }
-//    }
+    private fun notifyIgnoredTest(ignoredTests: List<Test>, listeners: ITestRunListener) {
+        ignoredTests.forEach {
+            val identifier = it.toTestIdentifier()
+            listeners.testStarted(identifier)
+            listeners.testIgnored(identifier)
+            listeners.testEnded(identifier, hashMapOf())
+        }
+    }
 
     private fun clearData(androidConfiguration: AndroidConfiguration, info: InstrumentationInfo) {
         if (androidConfiguration.applicationPmClear) {
