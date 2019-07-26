@@ -195,6 +195,9 @@ class Marathon(val configuration: Configuration) {
             log.warn { "HAPPY ignore filter $it" }
             val ll = it.filter(parsedTests)
             log.warn { "HAPPY found ${ll.size} from ${parsedTests.size}" }
+            ll.forEach {
+                log.warn ("HAPPY $it")
+            }
             tests.addAll(ll)
         }
         return tests.toList()
