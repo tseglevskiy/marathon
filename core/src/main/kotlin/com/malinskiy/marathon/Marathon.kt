@@ -194,7 +194,7 @@ class Marathon(val configuration: Configuration) {
         configuration.filteringConfiguration.ignorelist.forEach {
             log.warn { "HAPPY ignore filter $it" }
             val ll = it.filter(parsedTests)
-            log.warn { "HAPPY found ${ll.size} from ${parsedTests.size}" }
+            log.warn { "HAPPY found ${ll.size} from ${parsedTests.size} really" }
             ll.forEach {
                 log.warn ("HAPPY $it")
             }
