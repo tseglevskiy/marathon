@@ -20,7 +20,6 @@ import com.malinskiy.marathon.report.debug.timeline.TimelineSummaryProvider
 import com.malinskiy.marathon.report.html.HtmlSummaryPrinter
 import com.malinskiy.marathon.report.internal.DeviceInfoReporter
 import com.malinskiy.marathon.report.internal.TestResultReporter
-import com.malinskiy.marathon.test.MetaProperty
 import com.malinskiy.marathon.test.Test
 import com.malinskiy.marathon.test.toTestName
 import com.malinskiy.marathon.usageanalytics.TrackActionType
@@ -33,8 +32,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 
 private val log = MarathonLogging.logger {}
-
-//val JUNIT_IGNORE_META_PROPERY = MetaProperty("org.junit.Ignore")
 
 class Marathon(val configuration: Configuration) {
 
@@ -119,13 +116,6 @@ class Marathon(val configuration: Configuration) {
 
         val progressReporter = ProgressReporter()
 
-        val ignoredReporter = IgnoredTestsReporter(fileManager, analytics)
-
-        ignored.forEach {
-            ignoredReporter.reportTest(it)
-
-        }
-
         log.info("Scheduling ${tests.size} tests")
         log.debug(tests.joinToString(", ") { it.toTestName() })
         val currentCoroutineContext = coroutineContext
@@ -142,6 +132,11 @@ class Marathon(val configuration: Configuration) {
             val startTime = System.currentTimeMillis()
             fun(): Long { return System.currentTimeMillis() - startTime }
         }()
+
+        val ignoredReporter = IgnoredTestsReporter(analytics)
+        ignored.forEach {
+            ignoredReporter.reportTest(it)
+        }
 
         val hook = installShutdownHook(scheduler, ignoredReporter.fakeDevicePoolId, getElapsedTimeMillis)
 
@@ -175,7 +170,7 @@ class Marathon(val configuration: Configuration) {
 
     private fun printSummary(scheduler: Scheduler, executionTime: Long, dummyReportPool: DevicePoolId) {
         scheduler.getPools().also {
-            if (it.isEmpty()) {
+            if (it.isNotEmpty()) {
                 val summaryPrinter = loadSummaryPrinter()
                 val summary = summaryCompiler.compile(it + dummyReportPool)
                 printCliReport(summary, executionTime)

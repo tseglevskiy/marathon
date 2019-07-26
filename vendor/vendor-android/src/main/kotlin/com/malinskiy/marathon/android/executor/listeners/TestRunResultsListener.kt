@@ -80,8 +80,6 @@ class TestRunResultsListener(private val testBatch: TestBatch,
             logger.warn { "HAPPY failed = ${it.test.toTestName()}, ${device.serialNumber}" }
         }
 
-
-
         deferred.complete(TestBatchResults(device, finished, failed, uncompleted))
     }
 
