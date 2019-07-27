@@ -136,7 +136,7 @@ class AndroidDevice(val ddmsDevice: IDevice,
     override suspend fun execute(configuration: Configuration,
                                  devicePoolId: DevicePoolId,
                                  testBatch: TestBatch,
-                                 deferred: CompletableDeferred<TestBatchResults>,
+                                 resultsWayBack: CompletableDeferred<TestBatchResults>,
                                  progressReporter: ProgressReporter) {
 
         val fileManager = FileManager(configuration.outputDir)
@@ -154,7 +154,7 @@ class AndroidDevice(val ddmsDevice: IDevice,
 
         val timer = SystemTimer()
 
-        testRunResultsListener = TestRunResultsListener(testBatch, this, deferred, timer, attachmentProviders)
+        testRunResultsListener = TestRunResultsListener(testBatch, this, resultsWayBack, timer, attachmentProviders)
 
         val listeners = CompositeTestRunListener(
                 listOf(
@@ -174,11 +174,9 @@ class AndroidDevice(val ddmsDevice: IDevice,
         val deferredResult = async {
             try {
                 runner.execute(configuration, testBatch, listeners)
-            } catch (ex: Exception) {
+            } finally {
                 listeners.terminate()
                 testRunResultsListener!!.forceEnd()
-
-                throw ex
             }
         }
 
