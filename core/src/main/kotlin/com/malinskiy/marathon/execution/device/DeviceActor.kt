@@ -151,8 +151,11 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
 
     private fun sendResults(result: CompletableDeferred<TestBatchResults>) {
         launch {
+            logger.warn("HAPPY $device sendResults - gonna await")
             val testResults = result.await()
+            logger.warn("HAPPY $device sendResults - awaited")
             pool.send(DevicePoolMessage.FromDevice.CompletedTestBatch(device, testResults))
+            logger.warn("HAPPY $device sendResults - sent")
         }
     }
 

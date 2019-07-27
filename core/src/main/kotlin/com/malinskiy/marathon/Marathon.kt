@@ -192,13 +192,10 @@ class Marathon(val configuration: Configuration) {
     private fun getIgnoredTests(parsedTests: List<Test>): List<Test> {
         val tests: MutableSet<Test> = mutableSetOf()
         configuration.filteringConfiguration.ignorelist.forEach {
-            log.warn { "HAPPY ignore filter $it" }
-            val ll = it.filter(parsedTests)
-            log.warn { "HAPPY found ${ll.size} from ${parsedTests.size} really" }
-            ll.forEach {
-                log.warn ("HAPPY $it")
-            }
-            tests.addAll(ll)
+            tests.addAll(it.filter(parsedTests))
+        }
+        tests.forEach {
+            log.debug { "ingore test ${it.toTestName()}" }
         }
         return tests.toList()
     }
