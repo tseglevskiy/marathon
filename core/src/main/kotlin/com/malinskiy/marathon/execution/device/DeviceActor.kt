@@ -186,15 +186,11 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 withRetry(30, 10000) {
                     if (isActive) {
                         try {
-                            logger.warn { "HAPPY gonna prepare ${device.serialNumber}" }
                             device.prepare(configuration)
-                            logger.warn { "HAPPY prepared ${device.serialNumber}" }
                         } catch (e: Exception) {
                             logger.debug { "device ${device.serialNumber} initialization failed. Retrying" }
                             throw e
                         }
-                    } else {
-                        logger.warn { "HAPPY inactive ${device.serialNumber}" }
                     }
                 }
 

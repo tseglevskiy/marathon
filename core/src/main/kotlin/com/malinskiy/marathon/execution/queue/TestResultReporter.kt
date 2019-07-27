@@ -24,6 +24,9 @@ class TestResultReporter(private val poolId: DevicePoolId,
     private fun createState(initialCount: Int) = StateMachine.create<TestState, TestEvent, TestAction> {
         initialState(TestState.Added(initialCount))
         state<TestState.Added> {
+            on<TestEvent.Incomplete> {
+                    dontTransition(TestAction.SaveReport(it.device, it.testResult))
+            }
             on<TestEvent.Passed> {
                 if (!configuration.strictMode || count <= 1) {
                     transitionTo(TestState.Passed(it.device, it.testResult), TestAction.SaveReport(it.device, it.testResult))
@@ -43,6 +46,9 @@ class TestResultReporter(private val poolId: DevicePoolId,
             }
         }
         state<TestState.Executed> {
+            on<TestEvent.Incomplete> {
+                dontTransition(TestAction.SaveReport(it.device, it.testResult))
+            }
             on<TestEvent.Failed> {
                 if (configuration.strictMode || count <= 1) {
                     transitionTo(TestState.Failed(it.device, it.testResult), TestAction.SaveReport(it.device, it.testResult))
@@ -89,12 +95,16 @@ class TestResultReporter(private val poolId: DevicePoolId,
         }
     }
 
-    fun testFinished(device: DeviceInfo, testResult: TestResult) {
+    fun testPassed(device: DeviceInfo, testResult: TestResult) {
         tests[testResult.test.toTestName()]?.transition(TestEvent.Passed(device, testResult))
     }
 
     fun testFailed(device: DeviceInfo, testResult: TestResult) {
         tests[testResult.test.toTestName()]?.transition(TestEvent.Failed(device, testResult))
+    }
+
+    fun testIncomplete(device: DeviceInfo, testResult: TestResult) {
+        tests[testResult.test.toTestName()]?.transition(TestEvent.Incomplete(device, testResult))
     }
 
     fun retryTest(device: DeviceInfo, testResult: TestResult) {
@@ -114,7 +124,9 @@ class TestResultReporter(private val poolId: DevicePoolId,
         val (testResult: TestResult?, device: DeviceInfo?) = extractEventAndDevice(transition)
 
         // Don't report tests that didn't finish the execution
-        if (testResult == null || device == null || testResult.status == TestStatus.INCOMPLETE) return
+//        if (testResult == null || device == null || testResult.status == TestStatus.INCOMPLETE) return
+        // TODO wtf? why?
+        if (testResult == null || device == null) return
         analytics.trackRawTestRun(poolId, device, testResult)
     }
 
@@ -122,12 +134,14 @@ class TestResultReporter(private val poolId: DevicePoolId,
         val event = transition.event
         val testResult: TestResult? = when (event) {
             is TestEvent.Passed -> event.testResult
+            is TestEvent.Incomplete -> event.testResult
             is TestEvent.Failed -> event.testResult
             is TestEvent.Retry -> event.testResult
             else -> null
         }
         val device: DeviceInfo? = when (event) {
             is TestEvent.Passed -> event.device
+            is TestEvent.Incomplete -> event.device
             is TestEvent.Failed -> event.device
             is TestEvent.Retry -> event.device
             else -> null

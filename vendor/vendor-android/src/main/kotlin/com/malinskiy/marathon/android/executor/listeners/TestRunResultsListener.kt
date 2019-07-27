@@ -58,49 +58,54 @@ class TestRunResultsListener(private val testBatch: TestBatch,
             it.test.method != "null"
         }
 
-        val (finished, failed) = nonNullTestResults.partition {
-            results[it.test.identifier()]?.isSuccessful() ?: false
+        val finished = nonNullTestResults.filter { results[it.test.identifier()]?.isSuccessful() ?: false }
+        val realIncomplete = nonNullTestResults.filter {
+            results[it.test.identifier()]?.status == com.android.ddmlib.testrunner.TestResult.TestStatus.INCOMPLETE
         }
+        val failed = nonNullTestResults - finished - realIncomplete
 
-        val uncompleted = tests
+        val missed = tests
                 .filterNot { expectedTest ->
                     results.containsKey(expectedTest.key)
                 }
                 .values
                 .createUncompletedTestResults(runResult, device)
 
-        uncompleted.forEach {
-            logger.warn { "uncompleted = ${it.test.toTestName()}, ${device.serialNumber}" }
-            logger.warn { "HAPPY uncompleted = ${it.test.toTestName()}, ${device.serialNumber}" }
-        }
-        finished.forEach {
-            logger.warn { "HAPPY finished = ${it.test.toTestName()}, ${device.serialNumber}" }
-        }
-        failed.forEach {
-            logger.warn { "HAPPY failed = ${it.test.toTestName()}, ${device.serialNumber}" }
+        val realIncompleteCorrected = realIncomplete.map {
+            it.copy(endTime = timer.currentTimeMillis(),
+                    stacktrace = it.stacktrace ?: runResult.runFailureMessage)
         }
 
-        deferred.complete(TestBatchResults(device, finished, failed, uncompleted))
+        realIncompleteCorrected.forEach {
+            logger.warn { "realIncomplete = ${it.test.toTestName()}, ${device.serialNumber}" }
+            logger.warn { "HAPPY realIncomplete = ${it}" }
+        }
+        missed.forEach {
+            logger.warn { "HAPPY missed = ${it}" }
+        }
+        finished.forEach {
+            logger.warn { "HAPPY finished = ${it}" }
+        }
+        failed.forEach {
+            logger.warn { "HAPPY failed = ${it}" }
+        }
+
+        deferred.complete(TestBatchResults(device, finished, failed, realIncompleteCorrected, missed))
     }
 
     private fun Collection<Test>.createUncompletedTestResults(testRunResult: com.android.ddmlib.testrunner.TestRunResult,
                                                               device: Device): Collection<TestResult> {
 
-        val lastCompletedTestEndTime = testRunResult
-                .testResults
-                .values
-                .maxBy { it.endTime }
-                ?.endTime
-                ?: timer.currentTimeMillis()
+        val fakeTestTime = timer.currentTimeMillis()
 
         return map {
             TestResult(
-                    it,
-                    device.toDeviceInfo(),
-                    TestStatus.FAILURE,
-                    lastCompletedTestEndTime,
-                    lastCompletedTestEndTime,
-                    testRunResult.runFailureMessage
+                    test = it,
+                    device = device.toDeviceInfo(),
+                    status = TestStatus.FAILURE,
+                    startTime = fakeTestTime,
+                    endTime = fakeTestTime,
+                    stacktrace = testRunResult.runFailureMessage
             )
         }
     }
