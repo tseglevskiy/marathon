@@ -66,8 +66,7 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun onBatchCompleted(device: DeviceInfo, results: TestBatchResults) {
-        logger.warn { "HAPPY onBatchCompleted $results" }
-
+        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted $results" }
 
         logger.debug { "handle test results ${device.serialNumber}" }
 
@@ -93,7 +92,7 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun handleProvenUncompletedTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
         incomeIncompleted.forEach{
-            logger.warn { "HAPPY handleProvenUncompletedTests $it" }
+            logger.warn { "HAPPY ${device.serialNumber} handleProvenUncompletedTests $it" }
         }
 
         incomeIncompleted.forEach {
@@ -104,7 +103,7 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun handleIncompleteTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
         incomeIncompleted.forEach{
-            logger.warn { "HAPPY handleIncompleteTests $it" }
+            logger.warn { "HAPPY ${device.serialNumber} handleIncompleteTests $it" }
         }
 
         val (retryQuotaExceeded, hasChance) = incomeIncompleted.partition {
@@ -124,6 +123,10 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private fun handlePassedTests(passed: Collection<TestResult>, device: DeviceInfo) {
+        passed.forEach{
+            logger.warn { "HAPPY ${device.serialNumber} handlePassedTests $it" }
+        }
+
         val flakyThatPassed = passed.filter { testShard.flakyTests.contains(it.test) }
 
         passed.forEach {
@@ -140,6 +143,10 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun handleFailedTests(failed: Collection<TestResult>,
                                           device: DeviceInfo) {
+        failed.forEach{
+            logger.warn { "HAPPY ${device.serialNumber} handleFailedTests $it" }
+        }
+
         logger.debug { "handle failed tests ${device.serialNumber}" }
         val retryList = retry.process(poolId, failed, testShard)
 
@@ -165,16 +172,16 @@ class QueueActor(private val configuration: Configuration,
         logger.debug { "request next batch for device ${device.serialNumber}" }
 
         activeBatches.keys.forEach {
-            logger.warn { "HAPPY there is active batch for $it" }
+            logger.warn { "HAPPY ${device.serialNumber} there is active batch for $it" }
         }
 
         if (queue.isNotEmpty()) {
             if (activeBatches.containsKey(device.serialNumber)) {
-                logger.warn { "HAPPY device is still busy ${device.serialNumber}" }
+                logger.warn { "HAPPY ${device.serialNumber}  device is still busy ${device.serialNumber}" }
                 return
             }
 
-            logger.warn { "HAPPY sending next batch for device ${device.serialNumber}" }
+            logger.warn { "HAPPY ${device.serialNumber} sending next batch for device ${device.serialNumber}" }
             logger.debug { "sending next batch for device ${device.serialNumber}" }
             sendBatch(device)
             return

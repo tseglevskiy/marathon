@@ -116,6 +116,11 @@ class TestResultReporter(private val poolId: DevicePoolId,
     }
 
     private fun trackTestTransition(poolId: DevicePoolId, transition: StateMachine.Transition<TestState, TestEvent, TestAction>) {
+        val (tr, di) = extractEventAndDevice(transition)
+        if (tr != null && di != null) {
+            logger.warn { "HAPPY trackTestTransition ${di.serialNumber} ${tr} - ${transition.fromState} ${transition.event} $transition" }
+        }
+
         notifyTestFinished(transition, poolId)
         notifyRawTestRun(transition, poolId)
     }
