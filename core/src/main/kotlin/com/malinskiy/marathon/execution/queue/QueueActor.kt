@@ -91,6 +91,7 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun handleProvenUncompletedTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
+        logger.warn { "HAPPY handleProvenUncompletedTests ${device.serialNumber} ${incomeIncompleted.size}" }
         incomeIncompleted.forEach{
             logger.warn { "HAPPY ${device.serialNumber} handleProvenUncompletedTests $it" }
         }
@@ -102,6 +103,7 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun handleIncompleteTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
+        logger.warn { "HAPPY handleIncompleteTests ${device.serialNumber} ${incomeIncompleted.size}" }
         incomeIncompleted.forEach{
             logger.warn { "HAPPY ${device.serialNumber} handleIncompleteTests $it" }
         }
@@ -123,6 +125,7 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private fun handlePassedTests(passed: Collection<TestResult>, device: DeviceInfo) {
+        logger.warn { "HAPPY handlePassedTests ${device.serialNumber} ${passed.size}" }
         passed.forEach{
             logger.warn { "HAPPY ${device.serialNumber} handlePassedTests $it" }
         }
@@ -143,6 +146,7 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun handleFailedTests(failed: Collection<TestResult>,
                                           device: DeviceInfo) {
+        logger.warn { "HAPPY handleFailedTests ${device.serialNumber} ${failed.size}" }
         failed.forEach{
             logger.warn { "HAPPY ${device.serialNumber} handleFailedTests $it" }
         }
