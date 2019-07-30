@@ -96,18 +96,22 @@ class TestResultReporter(private val poolId: DevicePoolId,
     }
 
     fun testPassed(device: DeviceInfo, testResult: TestResult) {
+        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Passed(device, testResult))
     }
 
     fun testFailed(device: DeviceInfo, testResult: TestResult) {
+        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Failed(device, testResult))
     }
 
     fun testIncomplete(device: DeviceInfo, testResult: TestResult) {
+        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Incomplete(device, testResult))
     }
 
     fun retryTest(device: DeviceInfo, testResult: TestResult) {
+        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Retry(device, testResult))
     }
 
@@ -154,13 +158,17 @@ class TestResultReporter(private val poolId: DevicePoolId,
         return Pair(testResult, device)
     }
 
+    private fun saveTestResults(device: DeviceInfo, testResult: TestResult) {
+        analytics.trackTestFinished(device = device, testResult = testResult, poolId = poolId)
+    }
+
     private fun notifyTestFinished(transition: StateMachine.Transition<TestState, TestEvent, TestAction>, poolId: DevicePoolId) {
         val validTransition = transition as? StateMachine.Transition.Valid
         if (validTransition is StateMachine.Transition.Valid) {
             val sideEffect = validTransition.sideEffect
             when (sideEffect) {
                 is TestAction.SaveReport -> {
-                    analytics.trackTestFinished(poolId, sideEffect.deviceInfo, sideEffect.testResult)
+//                    analytics.trackTestFinished(poolId, sideEffect.deviceInfo, sideEffect.testResult)
                 }
             }
         }
