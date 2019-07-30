@@ -159,7 +159,7 @@ class TestResultReporter(private val poolId: DevicePoolId,
     }
 
     private fun saveTestResults(device: DeviceInfo, testResult: TestResult) {
-        analytics.trackTestFinished(device = device, testResult = testResult, poolId = poolId)
+//        analytics.trackTestFinished(device = device, testResult = testResult, poolId = poolId)
     }
 
     private fun notifyTestFinished(transition: StateMachine.Transition<TestState, TestEvent, TestAction>, poolId: DevicePoolId) {
@@ -168,7 +168,7 @@ class TestResultReporter(private val poolId: DevicePoolId,
             val sideEffect = validTransition.sideEffect
             when (sideEffect) {
                 is TestAction.SaveReport -> {
-//                    analytics.trackTestFinished(poolId, sideEffect.deviceInfo, sideEffect.testResult)
+                    analytics.trackTestFinished(poolId, sideEffect.deviceInfo, sideEffect.testResult)
                 }
             }
         }
