@@ -66,7 +66,7 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun onBatchCompleted(device: DeviceInfo, results: TestBatchResults) {
-        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted $results" }
+        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted $results - start" }
 
         logger.debug { "handle test results ${device.serialNumber}" }
 
@@ -84,6 +84,7 @@ class QueueActor(private val configuration: Configuration,
             handleIncompleteTests(results.missed, device)
         }
         activeBatches.remove(device.serialNumber)
+        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted $results - finish" }
     }
 
     private fun onTerminate() {
