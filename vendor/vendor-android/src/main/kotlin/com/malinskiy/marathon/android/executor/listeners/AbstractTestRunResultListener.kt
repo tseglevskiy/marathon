@@ -12,7 +12,6 @@ abstract class AbstractTestRunResultListener : NoOpTestRunListener() {
         synchronized(runResult) {
             if (active) runResult.testRunStarted(runName, testCount)
         }
-
     }
 
     override fun testStarted(test: TestIdentifier) {

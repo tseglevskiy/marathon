@@ -44,12 +44,12 @@ class AndroidDevice(val ddmsDevice: IDevice,
 
 
     private val dispatcher by lazy {
-        newFixedThreadPoolContext(1, "AndroidDevice - execution - ${ddmsDevice.serialNumber}")
+        newFixedThreadPoolContext(2, "AndroidDevice - execution - ${ddmsDevice.serialNumber}")
     }
 
     override val coroutineContext: CoroutineContext = dispatcher
 
-    val logger = MarathonLogging.logger(AndroidDevice::class.java.simpleName)
+    val logger = MarathonLogging.logger("AndroidDevice[${ddmsDevice.serialNumber}]")
 
     override val abi: String by lazy {
         ddmsDevice.getProperty("ro.product.cpu.abi") ?: "Unknown"
@@ -215,7 +215,9 @@ class AndroidDevice(val ddmsDevice: IDevice,
     }
 
     override fun forceEnd() {
+        logger.warn { "HAPPY forceEnd requested ${serialNumber}" }
         testRunResultsListener?.forceEnd()
+        logger.warn { "HAPPY forceEnd finished ${serialNumber}" }
     }
 
     override fun dispose() {

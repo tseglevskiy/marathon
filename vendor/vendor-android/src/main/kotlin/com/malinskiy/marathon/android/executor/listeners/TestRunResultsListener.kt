@@ -27,6 +27,9 @@ class TestRunResultsListener(private val testBatch: TestBatch,
                              attachmentProviders: List<AttachmentProvider>)
     : AbstractTestRunResultListener(), AttachmentListener {
 
+    private val logger = MarathonLogging.logger("TestRunResultsListener[${device.serialNumber}]")
+
+
     private val attachments: MutableMap<Test, MutableList<Attachment>> = mutableMapOf()
 
     init {
@@ -44,9 +47,9 @@ class TestRunResultsListener(private val testBatch: TestBatch,
         attachments[test]!!.add(attachment)
     }
 
-    private val logger = MarathonLogging.logger("TestRunResultsListener")
-
     override fun handleTestRunResults(runResult: DdmLibTestRunResult) {
+        logger.warn { "HAPPY handleTestRunResults stareted" }
+
         val results = mergeParameterisedResults(runResult.testResults)
         val tests = testBatch.tests.associateBy { it.identifier() }
 
@@ -90,7 +93,9 @@ class TestRunResultsListener(private val testBatch: TestBatch,
             logger.warn { "HAPPY failed = ${it}" }
         }
 
+        logger.warn { "HAPPY handleTestRunResults sending to deffered" }
         deferred.complete(TestBatchResults(device, finished, failed, realIncompleteCorrected, missed))
+        logger.warn { "HAPPY handleTestRunResults finished" }
     }
 
     private fun Collection<Test>.createUncompletedTestResults(testRunResult: com.android.ddmlib.testrunner.TestRunResult,

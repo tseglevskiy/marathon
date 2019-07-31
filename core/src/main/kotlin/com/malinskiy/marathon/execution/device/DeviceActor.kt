@@ -114,6 +114,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                     executeBatch(sideEffect.batch, sideEffect.result)
                 }
                 is DeviceAction.Terminate -> {
+                    device.forceEnd()
                     terminate()
                 }
                 is DeviceAction.StopAndTerminatee -> {
