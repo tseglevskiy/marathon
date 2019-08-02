@@ -133,9 +133,8 @@ class TestResultReporter(private val poolId: DevicePoolId,
         val (testResult: TestResult?, device: DeviceInfo?) = extractEventAndDevice(transition)
 
         // Don't report tests that didn't finish the execution
-//        if (testResult == null || device == null || testResult.status == TestStatus.INCOMPLETE) return
+        if (testResult == null || device == null || testResult.status == TestStatus.INCOMPLETE) return
         // TODO wtf? why?
-        if (testResult == null || device == null) return
         analytics.trackRawTestRun(poolId, device, testResult)
     }
 
