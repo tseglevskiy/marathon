@@ -183,18 +183,16 @@ class AndroidDevice(val ddmsDevice: IDevice,
         val expectedTime: Long = testBatch
                 .calculateTimeout(configuration)
                 .run { this + this / 10L } // +10%
-        logger.warn("HAPPY expected time for batch is $expectedTime ms")
 
         val expectedFinish = currentTimeMillis() + expectedTime
 
         while (deferredResult.isActive) {
             delay(1000)
-//            logger.warn("HAPPY tick ${expectedFinish - currentTimeMillis()}")
 
             if (expectedFinish < currentTimeMillis()) {
                 listeners.terminate()
                 forceEnd()
-                throw DeviceTimeoutException("HAPPY Time for batch exceeded")
+                throw DeviceTimeoutException("Time for batch exceeded")
             }
         }
     }
@@ -215,9 +213,7 @@ class AndroidDevice(val ddmsDevice: IDevice,
     }
 
     override fun forceEnd() {
-        logger.warn { "HAPPY forceEnd requested ${serialNumber}" }
         testRunResultsListener?.forceEnd()
-        logger.warn { "HAPPY forceEnd finished ${serialNumber}" }
     }
 
     override fun dispose() {

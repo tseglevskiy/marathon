@@ -66,8 +66,6 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun onBatchCompleted(device: DeviceInfo, results: TestBatchResults) {
-        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted start $results" }
-
         logger.debug { "handle test results ${device.serialNumber}" }
 
         if (results.passed.isNotEmpty()) {
@@ -79,12 +77,12 @@ class QueueActor(private val configuration: Configuration,
         if (results.incomplete.isNotEmpty()) {
             handleProvenUncompletedTests(results.incomplete, device)
         }
-        // there is no statistics can test be missed by its' quality
+        // there is no statistics if can test be missed by its quality
+        // so by default missed test is incomplete also
         if (results.missed.isNotEmpty()) {
             handleIncompleteTests(results.missed, device)
         }
         activeBatches.remove(device.serialNumber)
-        logger.warn { "HAPPY ${device.serialNumber} onBatchCompleted finish $results" }
     }
 
     private fun onTerminate() {
@@ -92,11 +90,6 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun handleProvenUncompletedTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
-        logger.warn { "HAPPY handleProvenUncompletedTests ${device.serialNumber} ${incomeIncompleted.size}" }
-        incomeIncompleted.forEach{
-            logger.warn { "HAPPY ${device.serialNumber} handleProvenUncompletedTests $it" }
-        }
-
         incomeIncompleted.forEach {
             testResultReporter.testIncomplete(device, it)
         }
@@ -104,11 +97,6 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private suspend fun handleIncompleteTests(incomeIncompleted: Collection<TestResult>, device: DeviceInfo) {
-        logger.warn { "HAPPY handleIncompleteTests ${device.serialNumber} ${incomeIncompleted.size}" }
-        incomeIncompleted.forEach{
-            logger.warn { "HAPPY ${device.serialNumber} handleIncompleteTests $it" }
-        }
-
         val (retryQuotaExceeded, hasChance) = incomeIncompleted.partition {
             (uncompletedTestsRetryCount[it.test] ?: 0) >= configuration.uncompletedTestRetryQuota
         }
@@ -126,11 +114,6 @@ class QueueActor(private val configuration: Configuration,
     }
 
     private fun handlePassedTests(passed: Collection<TestResult>, device: DeviceInfo) {
-        logger.warn { "HAPPY handlePassedTests ${device.serialNumber} ${passed.size}" }
-        passed.forEach{
-            logger.warn { "HAPPY ${device.serialNumber} handlePassedTests $it" }
-        }
-
         val flakyThatPassed = passed.filter { testShard.flakyTests.contains(it.test) }
 
         passed.forEach {
@@ -147,12 +130,6 @@ class QueueActor(private val configuration: Configuration,
 
     private suspend fun handleFailedTests(failed: Collection<TestResult>,
                                           device: DeviceInfo) {
-        logger.warn { "HAPPY handleFailedTests ${device.serialNumber} ${failed.size}" }
-        failed.forEach{
-            logger.warn { "HAPPY ${device.serialNumber} handleFailedTests $it" }
-        }
-
-        logger.debug { "handle failed tests ${device.serialNumber}" }
         val retryList = retry.process(poolId, failed, testShard)
 
         progressReporter.addTests(poolId, retryList.size)
@@ -176,17 +153,11 @@ class QueueActor(private val configuration: Configuration,
     private suspend fun onRequestBatch(device: DeviceInfo) {
         logger.debug { "request next batch for device ${device.serialNumber}" }
 
-        activeBatches.keys.forEach {
-            logger.warn { "HAPPY ${device.serialNumber} there is active batch for $it" }
-        }
-
         if (queue.isNotEmpty()) {
             if (activeBatches.containsKey(device.serialNumber)) {
-                logger.warn { "HAPPY ${device.serialNumber}  device is still busy ${device.serialNumber}" }
                 return
             }
 
-            logger.warn { "HAPPY ${device.serialNumber} sending next batch for device ${device.serialNumber}" }
             logger.debug { "sending next batch for device ${device.serialNumber}" }
             sendBatch(device)
             return

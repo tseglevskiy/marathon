@@ -48,8 +48,6 @@ class TestRunResultsListener(private val testBatch: TestBatch,
     }
 
     override fun handleTestRunResults(runResult: DdmLibTestRunResult) {
-        logger.warn { "HAPPY handleTestRunResults stareted" }
-
         val results = mergeParameterisedResults(runResult.testResults)
         val tests = testBatch.tests.associateBy { it.identifier() }
 
@@ -80,22 +78,19 @@ class TestRunResultsListener(private val testBatch: TestBatch,
         }
 
         realIncompleteCorrected.forEach {
-            logger.warn { "realIncomplete = ${it.test.toTestName()}, ${device.serialNumber}" }
-            logger.warn { "HAPPY realIncomplete = ${it}" }
+            logger.debug { "realIncomplete = ${it.test.toTestName()}, ${device.serialNumber}" }
         }
         missed.forEach {
-            logger.warn { "HAPPY missed = ${it}" }
+            logger.debug { "missed = ${it}" }
         }
         finished.forEach {
-            logger.warn { "HAPPY finished = ${it}" }
+            logger.debug { "finished = ${it}" }
         }
         failed.forEach {
-            logger.warn { "HAPPY failed = ${it}" }
+            logger.debug { "failed = ${it}" }
         }
 
-        logger.warn { "HAPPY handleTestRunResults sending to deffered" }
         deferred.complete(TestBatchResults(device, finished, failed, realIncompleteCorrected, missed))
-        logger.warn { "HAPPY handleTestRunResults finished" }
     }
 
     private fun Collection<Test>.createUncompletedTestResults(testRunResult: com.android.ddmlib.testrunner.TestRunResult,

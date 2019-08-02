@@ -88,12 +88,11 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
         onTransition {
             val validTransition = it as? StateMachine.Transition.Valid
             if (validTransition !is StateMachine.Transition.Valid) {
-                logger.error { "Invalid transition from ${it.fromState} event ${it.event}" }
-                logger.error { "HAPPY Invalid transition from ${it.fromState.javaClass.simpleName} by event ${it.event}" }
+                logger.error { "Invalid transition from ${it.fromState} by event ${it.event}" }
                 return@onTransition
             }
 
-            logger.warn("HAPPY ${device.serialNumber} transition from ${it.fromState.javaClass.simpleName} to ${validTransition.toState} by event ${validTransition.event}")
+            logger.debug("Transition from ${it.fromState.javaClass.simpleName} to ${validTransition.toState} by event ${validTransition.event}")
 
             val sideEffect = validTransition.sideEffect
             val justForWarning = when (sideEffect) {
@@ -152,11 +151,8 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
 
     private fun sendResults(result: CompletableDeferred<TestBatchResults>) {
         launch {
-            logger.warn("HAPPY $device sendResults - gonna await")
             val testResults = result.await()
-            logger.warn("HAPPY $device sendResults - awaited")
             pool.send(DevicePoolMessage.FromDevice.CompletedTestBatch(device, testResults))
-            logger.warn("HAPPY $device sendResults - sent")
         }
     }
 
@@ -169,7 +165,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
     private var job by observable<Job?>(null) { _, _, newValue ->
         newValue?.invokeOnCompletion {
             if (newValue.isCancelled) {
-                logger.warn("HAPPY seems like termination is in progress. ")
+                logger.debug("seems like terminating is in progress.")
 
             } else if (it != null) {
                 // job is alive but failed
@@ -198,7 +194,7 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
                 state.transition(DeviceEvent.InitializingComplete)
 
             } catch (e: Exception) {
-                logger.warn { "HAPPY shit happens ${device.serialNumber} ${e}" }
+                logger.error(e) { "Critical error during device initialisation" }
                 state.transition(DeviceEvent.Terminate)
             }
 
@@ -209,29 +205,24 @@ class DeviceActor(private val devicePoolId: DevicePoolId,
         logger.debug { "executeBatch ${device.serialNumber}" }
         job = async {
             try {
-                logger.warn("HAPPY ${device.serialNumber} batch started")
-
+                logger.debug("batch started")
                 device.execute(configuration, devicePoolId, batch, result, progressReporter)
-
-                logger.warn("HAPPY ${device.serialNumber} batch finished")
+                logger.debug("batch finished")
 
                 state.transition(DeviceEvent.RunningComplete)
+
             } catch (e: DeviceLostException) {
-                logger.warn("HAPPY ${device.serialNumber} DeviceLostException")
                 logger.error(e) { "Critical error during execution" }
-
                 state.transition(DeviceEvent.Terminate)
+
             } catch (e: DeviceTimeoutException) {
-                logger.warn("HAPPY ${device.serialNumber} DeviceTimeoutException")
                 logger.error(e) { "Critical error during execution" }
-
                 state.transition(DeviceEvent.Initialize) // there is the difference with DeviceLostException: we still have device so we can kick it
-            } catch (e: TestBatchExecutionException) {
-                logger.warn("HAPPY ${device.serialNumber} TestBatchExecutionException")
 
+            } catch (e: TestBatchExecutionException) {
+                logger.error(e) { "Critical error during execution" }
                 state.transition(DeviceEvent.RunningComplete)
             }
-
         }
     }
 

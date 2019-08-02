@@ -19,7 +19,7 @@ import com.malinskiy.marathon.report.debug.timeline.TimelineSummaryPrinter
 import com.malinskiy.marathon.report.debug.timeline.TimelineSummaryProvider
 import com.malinskiy.marathon.report.html.HtmlSummaryPrinter
 import com.malinskiy.marathon.report.internal.DeviceInfoReporter
-import com.malinskiy.marathon.report.internal.TestResultReporter
+import com.malinskiy.marathon.report.internal.TestResultRepo
 import com.malinskiy.marathon.test.Test
 import com.malinskiy.marathon.test.toTestName
 import com.malinskiy.marathon.usageanalytics.TrackActionType
@@ -38,7 +38,7 @@ class Marathon(val configuration: Configuration) {
     private val fileManager = FileManager(configuration.outputDir)
     private val gson = Gson()
 
-    private val testResultReporter = TestResultReporter(fileManager, gson)
+    private val testResultReporter = TestResultRepo(fileManager, gson)
     private val deviceInfoReporter = DeviceInfoReporter(fileManager, gson)
     private val analyticsFactory = AnalyticsFactory(configuration, fileManager, deviceInfoReporter, testResultReporter,
             gson)

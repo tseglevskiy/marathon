@@ -96,22 +96,18 @@ class TestResultReporter(private val poolId: DevicePoolId,
     }
 
     fun testPassed(device: DeviceInfo, testResult: TestResult) {
-        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Passed(device, testResult))
     }
 
     fun testFailed(device: DeviceInfo, testResult: TestResult) {
-        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Failed(device, testResult))
     }
 
     fun testIncomplete(device: DeviceInfo, testResult: TestResult) {
-        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Incomplete(device, testResult))
     }
 
     fun retryTest(device: DeviceInfo, testResult: TestResult) {
-        saveTestResults(device, testResult)
         tests[testResult.test.toTestName()]?.transition(TestEvent.Retry(device, testResult))
     }
 
@@ -120,11 +116,6 @@ class TestResultReporter(private val poolId: DevicePoolId,
     }
 
     private fun trackTestTransition(poolId: DevicePoolId, transition: StateMachine.Transition<TestState, TestEvent, TestAction>) {
-        val (tr, di) = extractEventAndDevice(transition)
-        if (tr != null && di != null) {
-            logger.warn { "HAPPY trackTestTransition ${di.serialNumber} ${tr} - ${transition.fromState} ${transition.event} $transition" }
-        }
-
         notifyTestFinished(transition, poolId)
         notifyRawTestRun(transition, poolId)
     }
@@ -134,7 +125,6 @@ class TestResultReporter(private val poolId: DevicePoolId,
 
         // Don't report tests that didn't finish the execution
         if (testResult == null || device == null || testResult.status == TestStatus.INCOMPLETE) return
-        // TODO wtf? why?
         analytics.trackRawTestRun(poolId, device, testResult)
     }
 
@@ -155,10 +145,6 @@ class TestResultReporter(private val poolId: DevicePoolId,
             else -> null
         }
         return Pair(testResult, device)
-    }
-
-    private fun saveTestResults(device: DeviceInfo, testResult: TestResult) {
-//        analytics.trackTestFinished(device = device, testResult = testResult, poolId = poolId)
     }
 
     private fun notifyTestFinished(transition: StateMachine.Transition<TestState, TestEvent, TestAction>, poolId: DevicePoolId) {
