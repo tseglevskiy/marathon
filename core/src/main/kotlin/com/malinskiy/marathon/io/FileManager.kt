@@ -59,7 +59,11 @@ class FileManager(private val output: File) {
 
     private fun createFile(directory: Path, filename: String): File = File(directory.toFile(), filename)
 
-    private fun createFilename(test: Test, fileType: FileType): String = "${test.toTestName()}.${fileType.suffix}"
+    private fun createFilename(test: Test, fileType: FileType): String = "${test.toTestName()}_${uniq++}.${fileType.suffix}"
 
     private fun createFilename(device: DeviceInfo, fileType: FileType): String = "${device.serialNumber}.${fileType.suffix}"
+
+    companion object {
+        var uniq = 100000
+    }
 }
